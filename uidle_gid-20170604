@@ -1,0 +1,12 @@
+select uidle, group_id as gid, group_concat(location) as grange, max(location) as maxloc, min(location) as minloc, count(group_id) as gspan from
+(SELECT  `uidle`,`hostname`, `location`, @last_location, @countday:= (case when (@last_uidle:=`uidle` and abs(`location` - @last_location)=1)
+							then
+							 (@countday+1) 
+							else 
+							 1 end ) as countday,
+               (@group_id:=(@group_id+ if (@countday=1, 1, 0))) as group_id,
+               @last_location:=`location` as last_location
+               FROM 
+               (select `uidle`, `location`, `hostname` from a01 where uidle!=0 order by `uidle`, `location`) t1,
+               (select @countday:=0, @group_id:=0, @last_hostname:=0, @last_location:=0) t2 ) as t3
+group by group_id
